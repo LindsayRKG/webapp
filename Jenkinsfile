@@ -13,6 +13,7 @@ pipeline {
                 slackSend(channel: '#tous-devops-jenkins', color: '#36A64F', message: ":white_check_mark: *Clone* OK")
             }
         }
+
         stage('Build') {
             steps {
                 slackSend(channel: '#tous-devops-jenkins', color: '#FFFF00', message: ":hammer: *Build* en cours...")
@@ -20,22 +21,37 @@ pipeline {
                 slackSend(channel: '#tous-devops-jenkins', color: '#36A64F', message: ":package: *Build* OK")
             }
         }
+
         stage('Deploy') {
             steps {
                 slackSend(channel: '#tous-devops-jenkins', color: '#FFFF00', message: ":rocket: *Deploy* en cours...")
-                sh '''
+
+                // ✅ Variables maintenant bien interprétées
+                sh """
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
                     docker run -d --name ${CONTAINER_NAME} -p ${PORT}:80 ${IMAGE_NAME}:latest
-                '''
-                script {
-                    slackSend(channel: '#tous-devops-jenkins', color: '#36A64F', message: ":tada: *Deploy* OK → http://localhost:${PORT}")
-                }
+                """
+
+                slackSend(channel: '#tous-devops-jenkins', color: '#36A64F', message: ":tada: *Deploy* OK → http://localhost:${PORT}")
             }
         }
     }
+
     post {
-        always { slackSend(channel: '#tous-devops-jenkins', color: currentBuild.currentResult == 'SUCCESS' ? '#36A64F' : '#FF0000', message: "*Pipeline terminé* : ${currentBuild.currentResult}") }
-        failure { slackSend(channel: '#tous-devops-jenkins', color: '#FF0000', message: ":x: ÉCHEC - Voir Jenkins") }
+        always {
+            slackSend(
+                channel: '#tous-devops-jenkins',
+                color: currentBuild.currentResult == 'SUCCESS' ? '#36A64F' : '#FF0000',
+                message: "*Pipeline terminé* : ${currentBuild.currentResult}"
+            )
+        }
+        failure {
+            slackSend(
+                channel: '#tous-devops-jenkins',
+                color: '#FF0000',
+                message: ":x: ÉCHEC - Voir Jenkins"
+            )
+        }
     }
 }
